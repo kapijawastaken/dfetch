@@ -1,0 +1,1 @@
+An even faster sysfetch written in D inspired by my previous project rubyfetch!
