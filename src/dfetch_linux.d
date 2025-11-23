@@ -8,10 +8,11 @@ import std.format;
 import std.array;
 import std.math;
 import std.algorithm;
+import std.uni;
 
 int main() {
   // vars
-  string logos = environment["HOME"] ~ "/.local/share/dfetch/logos/";
+  string logos = environment["HOME"] ~ ".local/share/dfetch/logos/";
   string user;
   if (exists("/etc/hostname"))
     user = environment["USER"] ~ "@" ~ readText("/etc/hostname").strip.replaceAll(regex(r"\..*"), "");
@@ -27,7 +28,8 @@ int main() {
 
   string kernel = readText("/proc/sys/kernel/osrelease").strip;
   string shell = environment["SHELL"].replaceAll(regex(r"^.*/"), "");
-  string distro = readText("/etc/os-release").replaceAll(regex(r"(?m)^(?!PRETTY_NAME=).*"), "").strip.replace("PRETTY_NAME=", "").replace("\"", "");
+  //string distro = readText("/etc/os-release").replaceAll(regex(r"(?m)^(?!PRETTY_NAME=).*"), "").strip.replace("PRETTY_NAME=", "").replace("\"", "");
+  string distro = "AlmaLinux";
   
   // uptime math
   int seconds = readText("/proc/uptime").replaceAll(regex(r"\..+"), "").strip.to!int;
@@ -49,13 +51,11 @@ int main() {
   string uptime = time.length == 0 ? "0 mins" : time.join(" ");
 
   // memory
-  string output = executeShell("free").output.strip;
-  string memLine = output.splitLines().filter!(line => line.startsWith("Mem:")).front.strip;
-  auto parts = memLine.split();
-  double total = to!double(parts[1]) / (1024 * 1024);
-  double used  = to!double(parts[2]) / (1024 * 1024);
-  total = round(total * 10) / 10.0;
-  used  = round(used * 10) / 10.0;
+  string meminfo = readText("/proc/meminfo");
+  auto memTotal = meminfo.matchFirst(regex(r"MemTotal:\s+(\d+)"));
+  auto memAvail = meminfo.matchFirst(regex(r"MemAvailable:\s+(\d+)"));
+  double total = to!double(memTotal[1]) / (1024 * 1024);
+  double used = total - (to!double(memAvail[1]) / (1024 * 1024));
   string memory = format("%.1f GB / %.1f GB", used, total);
 
   // arrays for all colours
@@ -74,6 +74,52 @@ int main() {
   auto red_distro    = red_distros.find!(d => matchFirst(distro, regex(r"(?i)\b" ~ d ~ r"\b")));
   auto yellow_distro = yellow_distros.find!(d => matchFirst(distro, regex(r"(?i)\b" ~ d ~ r"\b")));
 
-  writeln(memory);
+  // print function
+  void print(string color, string color_distro) {
+    writeln("\x1b[1m" ~ color ~ user ~ "\n--------------------");
+    writeln("\x1b[1m" ~ color ~ "distro\x1b[0m " ~ distro);
+    writeln("\x1b[1m" ~ color ~ "kernel\x1b[0m " ~ kernel);
+    writeln("\x1b[1m" ~ color ~ "shell\x1b[0m " ~ shell);
+    writeln("\x1b[1m" ~ color ~ "uptime\x1b[0m " ~ uptime);
+    writeln("\x1b[1m" ~ color ~ "memory\x1b[0m " ~ memory);
+    string ascii = readText(logos ~ color_distro.toLower);
+    writeln(ascii);
+  }
+
+  // the legendary if statement
+  if (!purple_distro.empty)
+    print("\x1b[35m", purple_distro.front);
+  else if (!cyan_distro.empty)
+    print("\x1b[36m", cyan_distro.front);
+  else if (!green_distro.empty)
+    print("\x1b[32m", green_distro.front);
+  else if (!blue_distro.empty)
+    print("\x1b[34m", blue_distro.front);
+  else if (!red_distro.empty)
+    print("\x1b[31m", red_distro.front);
+  else if (!yellow_distro.empty)
+    print("\x1b[33m", yellow_distro.front);
+  else if (distro.canFind("Alma")) {
+    writeln("\x1b[1m\x1b[34m" ~ user);
+    writeln("\x1b[1m\x1b[36m--------------------");
+    writeln("\x1b[1m\x1b[32m" ~ "distro\x1b[0m " ~ distro);
+    writeln("\x1b[1m\x1b[32m" ~ "kernel\x1b[0m " ~ kernel);
+    writeln("\x1b[1m\x1b[33m" ~ "shell\x1b[0m " ~ shell);
+    writeln("\x1b[1m\x1b[31m" ~ "uptime\x1b[0m " ~ uptime);
+    writeln("\x1b[1m\x1b[31m" ~ "memory\x1b[0m " ~ memory);
+    string ascii = readText(logos ~ "alma");
+    writeln(ascii);
+  } else {
+    writeln("\x1b[1m" ~ user ~ "\n--------------------");
+    writeln("\x1b[1m" ~ "distro\x1b[0m " ~ distro);
+    writeln("\x1b[1m" ~ "kernel\x1b[0m " ~ kernel);
+    writeln("\x1b[1m" ~ "shell\x1b[0m " ~ shell);
+    writeln("\x1b[1m" ~ "uptime\x1b[0m " ~ uptime);
+    writeln("\x1b[1m" ~ "memory\x1b[0m " ~ memory);
+    string ascii = readText(logos ~ "linux");
+    writeln(ascii);
+  }
+  // reset formatting
+  write("\x1b[0m");
   return 0;
 }
