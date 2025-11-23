@@ -29,7 +29,7 @@ int main() {
   string kernel = readText("/proc/sys/kernel/osrelease").strip;
   string shell = environment["SHELL"].replaceAll(regex(r"^.*/"), "");
   string distro = readText("/etc/os-release").replaceAll(regex(r"(?m)^(?!PRETTY_NAME=).*"), "").strip.replace("PRETTY_NAME=", "").replace("\"", "");
-    
+   
   // uptime math
   int seconds = readText("/proc/uptime").replaceAll(regex(r"\..+"), "").strip.to!int;
   int years = seconds / 31536000;
