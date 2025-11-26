@@ -12,7 +12,7 @@ import std.uni;
 
 int main() {
   // vars
-  string logos = environment["HOME"] ~ ".local/share/dfetch/logos/";
+  string logos = environment["HOME"] ~ "/.local/share/dfetch/logos/";
   string user;
   if (exists("/etc/hostname"))
     user = environment["USER"] ~ "@" ~ readText("/etc/hostname").strip.replaceAll(regex(r"\..*"), "");
